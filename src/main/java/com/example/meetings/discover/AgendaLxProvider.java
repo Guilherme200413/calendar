@@ -1,6 +1,7 @@
 package com.example.meetings.discover;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.springframework.beans.factory.annotation.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
@@ -37,14 +38,21 @@ public class AgendaLxProvider implements EventProvider {
 
     private final RestClient http;
 
-    public AgendaLxProvider() {
+    public AgendaLxProvider(
+            @Value("${app.discover.agendalx.base-url:https://www.agendalx.pt/wp-json/agendalx/v1}")
+            String baseUrl) {
+        org.springframework.http.client.SimpleClientHttpRequestFactory factory =
+                new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(5000);
+        factory.setReadTimeout(5000);
         this.http = RestClient.builder()
-                .baseUrl("https://www.agendalx.pt/wp-json/agendalx/v1")
+                .baseUrl(baseUrl)
+                .requestFactory(factory)
                 .defaultHeader("User-Agent",
                         "Mozilla/5.0 (compatible; meetings-app/0.1; +http://localhost)")
                 .build();
     }
-
+    
     @Override public String name() { return "Agenda Cultural de Lisboa"; }
 
     @Override public boolean isConfigured() { return true; } // public endpoint, no creds

@@ -25,11 +25,17 @@ public class TicketmasterProvider implements EventProvider {
 
     public TicketmasterProvider(
             @Value("${app.discover.ticketmaster.api-key:}") String apiKey,
-            @Value("${app.discover.ticketmaster.country-code:PT}") String countryCode) {
+            @Value("${app.discover.ticketmaster.country-code:PT}") String countryCode,
+            @Value("${app.discover.ticketmaster.base-url:https://app.ticketmaster.com/discovery/v2}") String baseUrl) {
         this.apiKey = apiKey;
         this.countryCode = countryCode;
+        org.springframework.http.client.SimpleClientHttpRequestFactory factory =
+                new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(5000);
+        factory.setReadTimeout(5000);
         this.http = RestClient.builder()
-                .baseUrl("https://app.ticketmaster.com/discovery/v2")
+                .baseUrl(baseUrl)
+                .requestFactory(factory)
                 .build();
     }
 

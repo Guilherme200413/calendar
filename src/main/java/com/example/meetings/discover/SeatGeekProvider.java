@@ -25,9 +25,18 @@ public class SeatGeekProvider implements EventProvider {
     private final String clientId;
     private final RestClient http;
 
-    public SeatGeekProvider(@Value("${app.discover.seatgeek.client-id:}") String clientId) {
+    public SeatGeekProvider(
+            @Value("${app.discover.seatgeek.client-id:}") String clientId,
+            @Value("${app.discover.seatgeek.base-url:https://api.seatgeek.com/2}") String baseUrl) {
         this.clientId = clientId;
-        this.http = RestClient.builder().baseUrl("https://api.seatgeek.com/2").build();
+        org.springframework.http.client.SimpleClientHttpRequestFactory factory =
+                new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(5000);
+        factory.setReadTimeout(5000);
+        this.http = RestClient.builder()
+                .baseUrl(baseUrl)
+                .requestFactory(factory)
+                .build();
     }
 
     @Override public String name() { return "SeatGeek"; }
