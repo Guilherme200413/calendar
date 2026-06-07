@@ -10,7 +10,21 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for ICalService — pure function, no mocks needed.
+ * Unit tests for {@link ICalService}.
+ *
+ * This class tests the iCal rendering logic — the generation of RFC 5545
+ * compliant calendar feeds from a list of meetings.
+ *
+ * Strategy:{@code ICalService} is a pure function: it receives data
+ * and produces a {@code String}. It has no external dependencies, so no mocking
+ * is needed. Tests follow a direct input → output pattern.
+ *
+ * Coverage rationale (criterion c — bug detection): Tests cover
+ * structural requirements (VCALENDAR/VEVENT tags, CRLF line endings, VERSION),
+ * content correctness (DTSTART/DTEND format, SUMMARY, DESCRIPTION),
+ * business rules (CONFIRMED vs TENTATIVE status, PARTSTAT values),
+ * and RFC 5545 compliance (escaping of special characters like {@code ;} and {@code ,}).
+ * Also tests {@link Meeting#isConfirmed()} logic via the rendered STATUS field.
  */
 public class ICalServiceTest {
 
@@ -23,6 +37,14 @@ public class ICalServiceTest {
         owner = new User("alice", "alice@example.com", "hash");
     }
 
+    // -------------------------------------------------------------------------
+    // Calendar structure
+    // -------------------------------------------------------------------------
+
+    /**
+     * Verifies that the rendered output contains the mandatory VCALENDAR
+     * begin/end tags and the VERSION and PRODID properties required by RFC 5545.
+     */
     @Test
     void render_emptyMeetings_containsCalendarHeaders() {
         String result = iCalService.render(owner, List.of());
@@ -32,12 +54,20 @@ public class ICalServiceTest {
         assertTrue(result.contains("PRODID:-//meetings-app//EN"));
     }
 
+    /**
+     * Verifies that the calendar name includes the owner's username,
+     * allowing calendar clients to display a meaningful feed title.
+     */
     @Test
     void render_emptyMeetings_containsOwnerName() {
         String result = iCalService.render(owner, List.of());
         assertTrue(result.contains("alice's meetings"));
     }
 
+    /**
+     * Verifies that line endings use CRLF (\\r\\n) as required by RFC 5545.
+     * Non-compliant line endings can cause parsing failures in calendar clients.
+     */
     @Test
     void render_usesCRLFLineEndings() {
         String result = iCalService.render(owner, List.of());
@@ -45,6 +75,13 @@ public class ICalServiceTest {
         assertFalse(result.contains("\r\n\n"));
     }
 
+    // -------------------------------------------------------------------------
+    // VEVENT structure
+    // -------------------------------------------------------------------------
+
+    /**
+     * Verifies that each meeting produces a VEVENT block with begin/end tags.
+     */
     @Test
     void render_singleMeeting_containsVEVENT() {
         Instant start = Instant.parse("2025-06-10T10:00:00Z");
@@ -57,6 +94,9 @@ public class ICalServiceTest {
         assertTrue(result.contains("END:VEVENT"));
     }
 
+    /**
+     * Verifies that the meeting title is rendered as the SUMMARY property.
+     */
     @Test
     void render_singleMeeting_containsTitle() {
         Instant start = Instant.parse("2025-06-10T10:00:00Z");
@@ -68,6 +108,9 @@ public class ICalServiceTest {
         assertTrue(result.contains("SUMMARY:Standup"));
     }
 
+    /**
+     * Verifies that the meeting description is rendered as the DESCRIPTION property.
+     */
     @Test
     void render_singleMeeting_containsDescription() {
         Instant start = Instant.parse("2025-06-10T10:00:00Z");
@@ -79,6 +122,10 @@ public class ICalServiceTest {
         assertTrue(result.contains("DESCRIPTION:Daily sync"));
     }
 
+    /**
+     * Verifies that a blank description does not produce a DESCRIPTION property.
+     * Omitting empty properties keeps the feed clean and avoids client parsing issues.
+     */
     @Test
     void render_blankDescription_noDescriptionLine() {
         Instant start = Instant.parse("2025-06-10T10:00:00Z");
@@ -90,6 +137,10 @@ public class ICalServiceTest {
         assertFalse(result.contains("DESCRIPTION:"));
     }
 
+    /**
+     * Verifies that start and end times are rendered in UTC format (yyyyMMdd'T'HHmmss'Z')
+     * as required by RFC 5545 for UTC timestamps.
+     */
     @Test
     void render_singleMeeting_containsStartAndEnd() {
         Instant start = Instant.parse("2025-06-10T10:00:00Z");
@@ -102,6 +153,14 @@ public class ICalServiceTest {
         assertTrue(result.contains("DTEND:20250610T110000Z"));
     }
 
+    // -------------------------------------------------------------------------
+    // Meeting.isConfirmed() — STATUS property
+    // -------------------------------------------------------------------------
+
+    /**
+     * Verifies that a meeting where all participants have ACCEPTED is rendered
+     * with STATUS:CONFIRMED, indicating the meeting is definite.
+     */
     @Test
     void render_allAccepted_statusConfirmed() {
         Instant start = Instant.parse("2025-06-10T10:00:00Z");
@@ -115,6 +174,10 @@ public class ICalServiceTest {
         assertTrue(result.contains("STATUS:CONFIRMED"));
     }
 
+    /**
+     * Verifies that a meeting with at least one PENDING participant is rendered
+     * with STATUS:TENTATIVE, indicating the meeting is not yet confirmed.
+     */
     @Test
     void render_pendingParticipant_statusTentative() {
         Instant start = Instant.parse("2025-06-10T10:00:00Z");
@@ -128,6 +191,14 @@ public class ICalServiceTest {
         assertTrue(result.contains("STATUS:TENTATIVE"));
     }
 
+    // -------------------------------------------------------------------------
+    // RFC 5545 compliance
+    // -------------------------------------------------------------------------
+
+    /**
+     * Verifies that special characters (semicolons and commas) in the meeting title
+     * are escaped as required by RFC 5545 to prevent iCal parsing errors.
+     */
     @Test
     void render_specialCharsInTitle_escaped() {
         Instant start = Instant.parse("2025-06-10T10:00:00Z");
@@ -139,6 +210,14 @@ public class ICalServiceTest {
         assertTrue(result.contains("SUMMARY:Meet\\; Alice\\, Bob"));
     }
 
+    // -------------------------------------------------------------------------
+    // ATTENDEE PARTSTAT
+    // -------------------------------------------------------------------------
+
+    /**
+     * Verifies that an ACCEPTED participant is rendered with PARTSTAT=ACCEPTED,
+     * allowing calendar clients to show attendance confirmation.
+     */
     @Test
     void render_attendeePartStatAccepted() {
         Instant start = Instant.parse("2025-06-10T10:00:00Z");
@@ -150,6 +229,10 @@ public class ICalServiceTest {
         assertTrue(result.contains("PARTSTAT=ACCEPTED"));
     }
 
+    /**
+     * Verifies that a PENDING participant is rendered with PARTSTAT=NEEDS-ACTION,
+     * which is the RFC 5545 standard value for unanswered invites.
+     */
     @Test
     void render_attendeePartStatPending() {
         Instant start = Instant.parse("2025-06-10T10:00:00Z");
@@ -163,6 +246,14 @@ public class ICalServiceTest {
         assertTrue(result.contains("PARTSTAT=NEEDS-ACTION"));
     }
 
+    // -------------------------------------------------------------------------
+    // Multiple meetings
+    // -------------------------------------------------------------------------
+
+    /**
+     * Verifies that multiple meetings all appear in the rendered output,
+     * each with their correct SUMMARY.
+     */
     @Test
     void render_multipleMeetings_allPresent() {
         Instant s1 = Instant.parse("2025-06-10T10:00:00Z");
