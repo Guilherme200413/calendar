@@ -12,11 +12,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Database integration tests for MeetingRepository.
- * Database Sandbox pattern: H2 in-memory isolates from production DB.
- * Transaction Rollback pattern: @DataJpaTest rolls back after each test.
- */
+
 @DataJpaTest
 public class MeetingRepositoryTest {
 
@@ -41,8 +37,14 @@ public class MeetingRepositoryTest {
         end   = Instant.parse("2099-01-10T11:00:00Z");
     }
 
-    // --- findCalendarMeetings ---
+    // -------------------------------------------------------------------------
+    // findCalendarMeetings()
+    // -------------------------------------------------------------------------
 
+    /**
+     * Verifies that the organizer sees their own meeting in the calendar.
+     * The organizer is always an ACCEPTED participant.
+     */
     @Test
     void findCalendarMeetings_organizerSeesOwnMeeting() {
         Meeting meeting = new Meeting("Standup", "desc", start, end, alice);
@@ -55,6 +57,9 @@ public class MeetingRepositoryTest {
         assertEquals("Standup", result.get(0).getTitle());
     }
 
+    /**
+     * Verifies that an ACCEPTED participant sees the meeting in their calendar.
+     */
     @Test
     void findCalendarMeetings_acceptedParticipantSeesMeeting() {
         Meeting meeting = new Meeting("Standup", "desc", start, end, alice);
@@ -67,6 +72,10 @@ public class MeetingRepositoryTest {
         assertEquals(1, result.size());
     }
 
+    /**
+     * Verifies that a PENDING participant sees the meeting in their calendar.
+     * Pending invites block the time slot until the user responds.
+     */
     @Test
     void findCalendarMeetings_pendingParticipantSeesMeeting() {
         Meeting meeting = new Meeting("Standup", "desc", start, end, alice);
@@ -79,6 +88,11 @@ public class MeetingRepositoryTest {
         assertEquals(1, result.size());
     }
 
+    /**
+     * Verifies that a DECLINED participant does NOT see the meeting.
+     * Declining frees up the slot on the user's calendar.
+     * A bug that kept declined meetings visible would be caught here.
+     */
     @Test
     void findCalendarMeetings_declinedParticipantDoesNotSeeMeeting() {
         Meeting meeting = new Meeting("Standup", "desc", start, end, alice);
@@ -91,6 +105,10 @@ public class MeetingRepositoryTest {
         assertTrue(result.isEmpty());
     }
 
+    /**
+     * Verifies that meetings are returned in ascending order of start time.
+     * A bug in the ORDER BY clause would cause this test to fail.
+     */
     @Test
     void findCalendarMeetings_sortedByStartTime() {
         Instant start2 = Instant.parse("2099-01-11T10:00:00Z");
@@ -109,14 +127,22 @@ public class MeetingRepositoryTest {
         assertEquals("Later",   result.get(1).getTitle());
     }
 
+    /**
+     * Verifies that a user with no meetings gets an empty list.
+     */
     @Test
     void findCalendarMeetings_emptyForUserWithNoMeetings() {
         List<Meeting> result = meetingRepository.findCalendarMeetings(bob);
         assertTrue(result.isEmpty());
     }
 
-    // --- findOverlapping ---
+    // -------------------------------------------------------------------------
+    // findOverlapping()
+    // -------------------------------------------------------------------------
 
+    /**
+     * Verifies that a meeting overlapping the query window is detected.
+     */
     @Test
     void findOverlapping_detectsOverlap() {
         Meeting meeting = new Meeting("Standup", "desc", start, end, alice);
@@ -128,6 +154,9 @@ public class MeetingRepositoryTest {
         assertEquals(1, result.size());
     }
 
+    /**
+     * Verifies that a meeting outside the query window is not detected.
+     */
     @Test
     void findOverlapping_noOverlap_returnsEmpty() {
         Meeting meeting = new Meeting("Standup", "desc", start, end, alice);
@@ -141,6 +170,10 @@ public class MeetingRepositoryTest {
         assertTrue(result.isEmpty());
     }
 
+    /**
+     * Verifies that a partial overlap is detected.
+     * A query window starting before the meeting and ending during it must match.
+     */
     @Test
     void findOverlapping_partialOverlap_detected() {
         Meeting meeting = new Meeting("Standup", "desc", start, end, alice);
@@ -153,10 +186,13 @@ public class MeetingRepositoryTest {
         assertEquals(1, result.size());
     }
 
+    /**
+     * Boundary test: a query window that starts exactly when the meeting ends
+     * must NOT count as an overlap. The query uses strict operators ({@code <} and {@code >}).
+     * A bug that used {@code <=}/{@code >=} would cause a false conflict here.
+     */
     @Test
     void findOverlapping_windowTouchesExactlyEnd_notOverlap() {
-        // Query começa exatamente quando a reunião acaba — operadores estritos < e >
-        // significa que não conta como sobreposição
         Meeting meeting = new Meeting("Standup", "desc", start, end, alice);
         meeting.addParticipant(new MeetingParticipant(meeting, alice, InviteStatus.ACCEPTED));
         entityManager.persist(meeting);
@@ -167,6 +203,10 @@ public class MeetingRepositoryTest {
         assertTrue(result.isEmpty());
     }
 
+    /**
+     * Verifies that a declined meeting is not counted as a conflict.
+     * A user who declined a meeting has their slot freed up for new proposals.
+     */
     @Test
     void findOverlapping_declinedMeeting_notCountedAsConflict() {
         Meeting meeting = new Meeting("Standup", "desc", start, end, alice);
@@ -179,8 +219,15 @@ public class MeetingRepositoryTest {
         assertTrue(result.isEmpty());
     }
 
-    // --- Cascade e round-trip ---
+    // -------------------------------------------------------------------------
+    // Cascade and round-trip
+    // -------------------------------------------------------------------------
 
+    /**
+     * Verifies that persisting a Meeting also persists its participants via cascade.
+     * The entity manager is flushed and cleared to force a real DB read,
+     * confirming the cascade annotation is correctly configured.
+     */
     @Test
     void cascade_participantsPersistedWithMeeting() {
         Meeting meeting = new Meeting("Standup", "desc", start, end, alice);
@@ -194,6 +241,10 @@ public class MeetingRepositoryTest {
         assertEquals(2, reloaded.getParticipants().size());
     }
 
+    /**
+     * Verifies that the start and end Instant values survive a full round-trip
+     * to and from the database without precision loss.
+     */
     @Test
     void roundTrip_startAndEndTimePreserved() {
         Meeting meeting = new Meeting("Standup", "desc", start, end, alice);

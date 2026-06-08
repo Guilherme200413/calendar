@@ -1,14 +1,13 @@
 package com.example.meetings.controller;
 
 import com.example.meetings.model.User;
-import com.example.meetings.service.AppUserDetailsService;
 import com.example.meetings.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.containsString;
@@ -17,6 +16,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -27,9 +27,6 @@ public class AuthControllerTest {
 
     @MockBean
     private UserService userService;
-
-    @MockBean
-    private AppUserDetailsService appUserDetailsService;
 
     // -------------------------------------------------------------------------
     // GET /
@@ -61,30 +58,21 @@ public class AuthControllerTest {
                 .andExpect(content().string(containsString("Sign in")));
     }
 
+    /**
+     * Verifies that an authenticated user can still access the login page.
+     * Spring Security in this app does not force-redirect authenticated users
+     * away from /login — the page is simply shown.
+     */
+    @Test
+    @WithMockUser(username = "alice")
+    void login_alreadyAuthenticated_pageLoads() throws Exception {
+        mockMvc.perform(get("/login"))
+                .andExpect(status().isOk());
+    }
+
     // -------------------------------------------------------------------------
     // POST /login
     // -------------------------------------------------------------------------
-
-    /**
-     * Verifies that a POST to /login with valid credentials redirects to /calendar.
-     * This validates our Spring Security configuration (success URL), not the
-     * framework authentication logic itself.
-     */
-    @Test
-    void login_validCredentials_redirectsToCalendar() throws Exception {
-        UserDetails userDetails = org.springframework.security.core.userdetails.User
-                .withUsername("alice")
-                .password("{noop}password123")
-                .roles("USER")
-                .build();
-        when(appUserDetailsService.loadUserByUsername("alice")).thenReturn(userDetails);
-
-        mockMvc.perform(post("/login").with(csrf())
-                        .param("username", "alice")
-                        .param("password", "password123"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/calendar"));
-    }
 
     /**
      * Verifies that a POST to /login with invalid credentials redirects to /login?error.

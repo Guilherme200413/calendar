@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
-import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.Instant;
 import java.util.List;
@@ -14,11 +13,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Database integration tests for MeetingParticipantRepository.
- * Database Sandbox pattern: H2 in-memory isolates from production DB.
- * Transaction Rollback pattern: @DataJpaTest rolls back after each test.
- */
+
 @DataJpaTest
 public class MeetingParticipantRepositoryTest {
 
@@ -47,8 +42,14 @@ public class MeetingParticipantRepositoryTest {
         entityManager.flush();
     }
 
-    // --- findByUserAndStatus ---
+    // -------------------------------------------------------------------------
+    // findByUserAndStatus()
+    // -------------------------------------------------------------------------
 
+    /**
+     * Verifies that pending invites for a user are correctly returned.
+     * Used by the calendar view to show the user's pending invitations.
+     */
     @Test
     void findByUserAndStatus_pendingInvites_returnsCorrect() {
         List<MeetingParticipant> result = participantRepository
@@ -58,6 +59,9 @@ public class MeetingParticipantRepositoryTest {
         assertEquals(bob.getUsername(), result.get(0).getUser().getUsername());
     }
 
+    /**
+     * Verifies that accepted invites for a user are correctly returned.
+     */
     @Test
     void findByUserAndStatus_acceptedInvites_returnsCorrect() {
         List<MeetingParticipant> result = participantRepository
@@ -67,6 +71,10 @@ public class MeetingParticipantRepositoryTest {
         assertEquals(alice.getUsername(), result.get(0).getUser().getUsername());
     }
 
+    /**
+     * Verifies that querying for a status the user does not have returns empty.
+     * Alice has ACCEPTED, so querying PENDING for alice must return nothing.
+     */
     @Test
     void findByUserAndStatus_noMatchingStatus_returnsEmpty() {
         List<MeetingParticipant> result = participantRepository
@@ -75,6 +83,9 @@ public class MeetingParticipantRepositoryTest {
         assertTrue(result.isEmpty());
     }
 
+    /**
+     * Verifies that a user with no invites at all gets an empty list.
+     */
     @Test
     void findByUserAndStatus_userWithNoInvites_returnsEmpty() {
         User carol = entityManager.persist(new User("carol", "carol@example.com", "hash"));
@@ -86,8 +97,14 @@ public class MeetingParticipantRepositoryTest {
         assertTrue(result.isEmpty());
     }
 
-    // --- findByMeetingIdAndUserId ---
+    // -------------------------------------------------------------------------
+    // findByMeetingIdAndUserId()
+    // -------------------------------------------------------------------------
 
+    /**
+     * Happy path: verifies that an existing participant is found by meeting and user ID.
+     * Used by MeetingService.respond() to locate the invite to update.
+     */
     @Test
     void findByMeetingIdAndUserId_existingParticipant_returnsIt() {
         Optional<MeetingParticipant> result = participantRepository
@@ -97,6 +114,10 @@ public class MeetingParticipantRepositoryTest {
         assertEquals(InviteStatus.PENDING, result.get().getStatus());
     }
 
+    /**
+     * Verifies that a wrong meeting ID returns empty.
+     * Prevents responding to a meeting the user was never invited to.
+     */
     @Test
     void findByMeetingIdAndUserId_wrongMeetingId_returnsEmpty() {
         Optional<MeetingParticipant> result = participantRepository
@@ -105,6 +126,9 @@ public class MeetingParticipantRepositoryTest {
         assertFalse(result.isPresent());
     }
 
+    /**
+     * Verifies that a wrong user ID returns empty.
+     */
     @Test
     void findByMeetingIdAndUserId_wrongUserId_returnsEmpty() {
         Optional<MeetingParticipant> result = participantRepository
@@ -113,6 +137,9 @@ public class MeetingParticipantRepositoryTest {
         assertFalse(result.isPresent());
     }
 
+    /**
+     * Verifies that both wrong IDs returns empty.
+     */
     @Test
     void findByMeetingIdAndUserId_bothWrong_returnsEmpty() {
         Optional<MeetingParticipant> result = participantRepository
@@ -121,10 +148,17 @@ public class MeetingParticipantRepositoryTest {
         assertFalse(result.isPresent());
     }
 
-    // --- Constraints da BD ---
+    // -------------------------------------------------------------------------
+    // Database constraints
+    // -------------------------------------------------------------------------
 
+    /**
+     * Verifies that the database enforces the UNIQUE constraint on (meeting_id, user_id).
+     * A user cannot appear twice in the same meeting's participant list.
+     * This is a database-level test — it validates schema integrity directly.
+     */
     @Test
-    void duplicateParticipant_throwsDataIntegrityViolation() {
+    void duplicateParticipant_throwsException() {
         assertThrows(Exception.class, () -> {
             entityManager.persist(new MeetingParticipant(meeting, bob, InviteStatus.ACCEPTED));
             entityManager.flush();
