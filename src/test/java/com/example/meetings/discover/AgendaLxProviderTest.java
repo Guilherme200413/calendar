@@ -50,11 +50,18 @@ public class AgendaLxProviderTest {
                         stringContent(body));
     }
 
+    /**
+     * Verifies that AgendaLx is always configured — it requires no API key.
+     */
     @Test
     void isConfigured_alwaysTrue() {
         assertTrue(provider.isConfigured());
     }
 
+    /**
+     * Happy path: verifies that a valid API response is parsed correctly,
+     * returning events with the expected title and venue.
+     */
     @Test
     void search_returnsEvent() {
         stubOk(RESPONSE_ONE_EVENT);
@@ -66,6 +73,10 @@ public class AgendaLxProviderTest {
         assertEquals("Casa da Música", results.get(0).venue());
     }
 
+    /**
+     * Verifies that time strings like "qua: 21h30" are correctly parsed
+     * to the expected UTC Instant (21:30 UTC in January = UTC+0 in Lisbon winter).
+     */
     @Test
     void search_parsesTimeCorrectly() {
         stubOk(RESPONSE_ONE_EVENT);
@@ -75,6 +86,10 @@ public class AgendaLxProviderTest {
         assertTrue(results.get(0).start().toString().contains("T21:30:00Z"));
     }
 
+    /**
+     * Verifies that when no time string is present, the provider defaults
+     * to 20:00 as the event start time.
+     */
     @Test
     void search_noTime_fallsBackTo2000() {
         String noTime = """
@@ -91,6 +106,10 @@ public class AgendaLxProviderTest {
         assertTrue(results.get(0).start().toString().contains("T20:00:00Z"));
     }
 
+    /**
+     * Verifies that events whose only occurrences are in the past are discarded.
+     * Prevents showing outdated events on the discover page.
+     */
     @Test
     void search_pastDatesOnly_returnsEmpty() {
         String pastEvent = """
@@ -107,6 +126,10 @@ public class AgendaLxProviderTest {
         assertTrue(results.isEmpty());
     }
 
+    /**
+     * Verifies that events with a blank or whitespace-only title are discarded.
+     * Prevents unnamed events from appearing on the discover page.
+     */
     @Test
     void search_blankTitle_isSkipped() {
         String blankTitle = """
@@ -123,6 +146,10 @@ public class AgendaLxProviderTest {
         assertTrue(results.isEmpty());
     }
 
+    /**
+     * Verifies that HTML tags in the description are stripped before
+     * being stored, leaving only plain text content.
+     */
     @Test
     void search_htmlInDescription_isRemoved() {
         stubOk(RESPONSE_ONE_EVENT);
@@ -133,6 +160,10 @@ public class AgendaLxProviderTest {
         assertTrue(results.get(0).description().contains("Uma noite incrível"));
     }
 
+    /**
+     * Verifies that a server error (HTTP 500) results in an empty list
+     * rather than an exception, implementing the best-effort contract.
+     */
     @Test
     void search_serverError_returnsEmptyList() {
         whenHttp(server)
@@ -144,6 +175,10 @@ public class AgendaLxProviderTest {
         assertTrue(results.isEmpty());
     }
 
+    /**
+     * Verifies that the provider contacts the stub server when search is called,
+     * confirming that HTTP requests are actually being made.
+     */
     @Test
     void search_sendsQueryParam() {
         stubOk(RESPONSE_ONE_EVENT);

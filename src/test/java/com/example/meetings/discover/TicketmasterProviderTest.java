@@ -48,11 +48,18 @@ public class TicketmasterProviderTest {
         server.stop();
     }
 
+    /**
+     * Verifies that a provider with a non-empty API key reports itself as configured.
+     */
     @Test
     void isConfigured_withApiKey_returnsTrue() {
         assertTrue(provider.isConfigured());
     }
 
+    /**
+     * Verifies that a provider with an empty API key reports itself as not configured.
+     * This is the graceful degradation behavior when no key is provided.
+     */
     @Test
     void isConfigured_emptyApiKey_returnsFalse() {
         TicketmasterProvider unconfigured = new TicketmasterProvider(
@@ -60,6 +67,10 @@ public class TicketmasterProviderTest {
         assertFalse(unconfigured.isConfigured());
     }
 
+    /**
+     * Happy path: verifies that a valid API response is parsed correctly,
+     * returning events with the expected title and venue.
+     */
     @Test
     void search_returnsEvents() {
         whenHttp(server)
@@ -75,6 +86,10 @@ public class TicketmasterProviderTest {
         assertEquals("Altice Arena", results.get(0).venue());
     }
 
+    /**
+     * Verifies that the provider sends the correct query parameters:
+     * the API key and the search keyword. This validates the HTTP contract.
+     */
     @Test
     void search_sendsApiKeyAndKeyword() {
         whenHttp(server)
@@ -93,6 +108,10 @@ public class TicketmasterProviderTest {
         );
     }
 
+    /**
+     * Verifies that a server error (HTTP 500) results in an empty list
+     * rather than an exception, implementing the best-effort contract.
+     */
     @Test
     void search_serverError_returnsEmptyList() {
         whenHttp(server)
@@ -104,6 +123,10 @@ public class TicketmasterProviderTest {
         assertTrue(results.isEmpty());
     }
 
+    /**
+     * Verifies that events without a dateTime (TBA events) are discarded.
+     * Including undated events would create meetings with null start times.
+     */
     @Test
     void search_eventWithoutDateTime_isSkipped() {
         String noDate = """
@@ -127,6 +150,10 @@ public class TicketmasterProviderTest {
         assertTrue(results.isEmpty());
     }
 
+    /**
+     * Verifies that an unconfigured provider never contacts the server.
+     * The stub server call log must remain empty after calling search.
+     */
     @Test
     void search_unconfigured_neverContactsServer() {
         TicketmasterProvider unconfigured = new TicketmasterProvider(

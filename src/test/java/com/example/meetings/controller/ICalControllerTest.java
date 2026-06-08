@@ -40,8 +40,15 @@ public class ICalControllerTest {
     @MockBean
     private UserService userService;
 
-    // --- GET /ical/{token}.ics ---
+    // -------------------------------------------------------------------------
+    // GET /ical/{token}.ics
+    // -------------------------------------------------------------------------
 
+    /**
+     * Happy path: a valid iCal token returns HTTP 200 with Content-Type text/calendar
+     * and a body containing the BEGIN:VCALENDAR marker.
+     * This validates the full rendering pipeline for the iCal feed.
+     */
     @Test
     void ical_validToken_returnsOk() throws Exception {
         User alice = new User("alice", "alice@example.com", "hash");
@@ -57,6 +64,10 @@ public class ICalControllerTest {
                 .andExpect(content().string(containsString("BEGIN:VCALENDAR")));
     }
 
+    /**
+     * Verifies that an invalid iCal token returns HTTP 404.
+     * Prevents unauthorized access to another user's calendar feed.
+     */
     @Test
     void ical_invalidToken_returns404() throws Exception {
         when(userRepository.findByIcalToken("invalid-token"))
@@ -66,14 +77,23 @@ public class ICalControllerTest {
                 .andExpect(status().isNotFound());
     }
 
-    // --- GET /calendar ---
+    // -------------------------------------------------------------------------
+    // GET /calendar
+    // -------------------------------------------------------------------------
 
+    /**
+     * Verifies that unauthenticated access to /calendar is redirected.
+     * The calendar is a protected resource requiring login.
+     */
     @Test
     void calendar_unauthenticated_redirectsToLogin() throws Exception {
         mockMvc.perform(get("/calendar"))
                 .andExpect(status().is3xxRedirection());
     }
 
+    /**
+     * Verifies that an authenticated user can access the calendar page.
+     */
     @Test
     @WithMockUser(username = "alice")
     void calendar_authenticated_returnsOk() throws Exception {
@@ -86,6 +106,10 @@ public class ICalControllerTest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Verifies that the calendar page contains a link to the iCal feed (.ics),
+     * allowing users to subscribe with external calendar applications.
+     */
     @Test
     @WithMockUser(username = "alice")
     void calendar_containsIcalLink() throws Exception {

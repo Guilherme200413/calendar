@@ -15,21 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-/**
- * Unit tests for {@link UserService}.
- *
- * This class tests user registration and lookup logic.
- *
- * Strategy: {@code UserRepository} and {@code PasswordEncoder} are
- * replaced by Mockito mocks. Mocking the {@code PasswordEncoder} is a deliberate
- * decision: the goal is to verify that the service delegates password
- * hashing to the encoder and never stores plain text — not to test the BCrypt
- * algorithm itself (which is a third-party library outside our scope).
- *
- * Coverage rationale (criterion c — bug detection): Tests cover
- * duplicate username rejection, password encoding delegation, plain-text
- * password prevention, and error message content for unknown users.
- */
+
 @ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
 

@@ -9,23 +9,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for {@link ICalService}.
- *
- * This class tests the iCal rendering logic — the generation of RFC 5545
- * compliant calendar feeds from a list of meetings.
- *
- * Strategy:{@code ICalService} is a pure function: it receives data
- * and produces a {@code String}. It has no external dependencies, so no mocking
- * is needed. Tests follow a direct input → output pattern.
- *
- * Coverage rationale (criterion c — bug detection): Tests cover
- * structural requirements (VCALENDAR/VEVENT tags, CRLF line endings, VERSION),
- * content correctness (DTSTART/DTEND format, SUMMARY, DESCRIPTION),
- * business rules (CONFIRMED vs TENTATIVE status, PARTSTAT values),
- * and RFC 5545 compliance (escaping of special characters like {@code ;} and {@code ,}).
- * Also tests {@link Meeting#isConfirmed()} logic via the rendered STATUS field.
- */
 public class ICalServiceTest {
 
     private ICalService iCalService;

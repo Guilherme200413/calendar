@@ -47,11 +47,17 @@ public class SeatGeekProviderTest {
         server.stop();
     }
 
+    /**
+     * Verifies that a provider with a non-empty client ID reports itself as configured.
+     */
     @Test
     void isConfigured_withClientId_returnsTrue() {
         assertTrue(provider.isConfigured());
     }
 
+    /**
+     * Verifies that a provider with an empty client ID reports itself as not configured.
+     */
     @Test
     void isConfigured_emptyClientId_returnsFalse() {
         SeatGeekProvider unconfigured = new SeatGeekProvider(
@@ -59,6 +65,10 @@ public class SeatGeekProviderTest {
         assertFalse(unconfigured.isConfigured());
     }
 
+    /**
+     * Happy path: verifies that a valid API response is parsed correctly,
+     * returning events with the expected title and venue.
+     */
     @Test
     void search_returnsEvents() {
         whenHttp(server)
@@ -74,6 +84,10 @@ public class SeatGeekProviderTest {
         assertEquals("Campo Pequeno", results.get(0).venue());
     }
 
+    /**
+     * Verifies that the provider sends the correct query parameters:
+     * the client ID and the search query. This validates the HTTP contract.
+     */
     @Test
     void search_sendsClientIdAndQuery() {
         whenHttp(server)
@@ -92,6 +106,10 @@ public class SeatGeekProviderTest {
         );
     }
 
+    /**
+     * Verifies that when a title is absent, the provider falls back to short_title.
+     * Prevents events from appearing with null or empty titles.
+     */
     @Test
     void search_titleFallsBackToShortTitle() {
         String noTitle = """
@@ -114,6 +132,10 @@ public class SeatGeekProviderTest {
         assertEquals("Rock", results.get(0).title());
     }
 
+    /**
+     * Verifies that a server error (HTTP 500) results in an empty list
+     * rather than an exception, implementing the best-effort contract.
+     */
     @Test
     void search_serverError_returnsEmptyList() {
         whenHttp(server)
@@ -125,6 +147,9 @@ public class SeatGeekProviderTest {
         assertTrue(results.isEmpty());
     }
 
+    /**
+     * Verifies that an unconfigured provider never contacts the server.
+     */
     @Test
     void search_unconfigured_neverContactsServer() {
         SeatGeekProvider unconfigured = new SeatGeekProvider(
@@ -135,6 +160,10 @@ public class SeatGeekProviderTest {
         assertTrue(server.getCalls().isEmpty());
     }
 
+    /**
+     * Verifies that events without a datetime_utc field are discarded.
+     * Including undated events would create meetings with null start times.
+     */
     @Test
     void search_eventWithoutDatetime_isSkipped() {
         String noDate = """

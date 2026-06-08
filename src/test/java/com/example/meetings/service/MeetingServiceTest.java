@@ -19,25 +19,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-/**
- * Unit tests for {@link MeetingService}.
- *
- * This class tests the core business logic of the meeting management layer,
- * covering meeting proposal, invitation response, iCal token resolution, and
- * copying events from external discovery providers.
- *
- * Strategy:All external dependencies (repositories) are replaced by
- * Mockito mocks. This isolates the service layer completely from the database,
- * making tests fast, deterministic, and focused solely on business logic.
- * When a test fails, the fault is guaranteed to be in {@code MeetingService},
- * not in infrastructure.
- *
- * Coverage rationale (criterion c — bug detection): Beyond happy paths,
- * tests cover boundary conditions ({@code end <= start}), unknown invitees,
- * duplicate invitees, organizer auto-acceptance, invalid invite responses,
- * and invalid iCal tokens — all situations where a regression would be
- * immediately caught.
- */
 @ExtendWith(MockitoExtension.class)
 public class MeetingServiceTest {
 
