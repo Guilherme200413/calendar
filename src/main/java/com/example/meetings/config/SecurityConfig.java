@@ -20,7 +20,11 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/login", "/register", "/css/**", "/js/**").permitAll()
+                // "/error" must be public: when a public endpoint (e.g. the iCal feed)
+                // produces an error for an unauthenticated request, Spring forwards to
+                // "/error"; if that path required auth, Security would redirect it to the
+                // login page and the real status (e.g. 404) would be masked by a 200.
+                .requestMatchers("/", "/login", "/register", "/error", "/css/**", "/js/**").permitAll()
                 // Public so calendar apps can subscribe without sending credentials. The
                 // unguessable token in the URL is the only access control here.
                 .requestMatchers("/ical/**").permitAll()
