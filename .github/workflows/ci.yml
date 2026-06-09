@@ -23,12 +23,7 @@ jobs:
           java-version: '17'
           cache: maven
 
-      # O runner ubuntu-latest já traz o Google Chrome instalado, e o Selenium
-      # Manager (Selenium 4) descarrega o chromedriver compatível em runtime, por
-      # isso o SeleniumEndToEndTest corre headless sem configuração extra. Este
-      # passo serve só de sanity-check de que o Chrome está presente.
-      # (Se um dia a imagem do runner deixar de trazer o Chrome, acrescenta antes
-      #  deste passo:  - uses: browser-actions/setup-chrome@v1)
+      
       - name: Show Chrome version
         run: google-chrome --version
 
