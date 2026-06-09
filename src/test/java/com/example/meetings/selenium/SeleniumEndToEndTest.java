@@ -48,17 +48,6 @@ public class SeleniumEndToEndTest {
 
     // -------------------------------------------------------------------------
     // Helpers
-    //
-    // Why everything goes through JavaScript:
-    // This Chrome build handles form interaction unreliably. A real click on a
-    // submit button sometimes does not fire the POST, and sendKeys occasionally
-    // drops characters when the field is present but not yet interactable. The
-    // failures are probabilistic, so they surface on a different test each run.
-    // To make the suite deterministic we (a) set every field value via JS and
-    // dispatch input/change events, and (b) submit the field's owning form via
-    // JS, which reliably sends the POST and still includes the CSRF hidden input.
-    // The navigation triggered by a JS submit is not auto-tracked by WebDriver,
-    // so each action is followed by an explicit wait for the destination page.
     // -------------------------------------------------------------------------
 
     /** The "Sign out" button is on every authenticated page; used as a "page ready" marker. */

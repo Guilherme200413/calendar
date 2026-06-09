@@ -30,8 +30,7 @@ jobs:
       - name: Build and run all tests
         run: mvn -B verify
 
-      # Disponibiliza os relatórios do Surefire mesmo quando os testes falham,
-      # para se poder inspecionar o que rebentou diretamente na execução do CI.
+
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4
