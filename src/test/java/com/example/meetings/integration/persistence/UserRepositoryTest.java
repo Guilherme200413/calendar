@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import jakarta.persistence.PersistenceException;
 
 import java.util.Optional;
 
@@ -161,7 +162,7 @@ public class UserRepositoryTest {
         entityManager.persist(new User("bob", "bob@example.com", "hash"));
         entityManager.flush();
 
-        assertThrows(Exception.class, () -> {
+        assertThrows(PersistenceException.class, () -> {
             entityManager.persist(new User("bob", "other@example.com", "hash"));
             entityManager.flush();
         });
