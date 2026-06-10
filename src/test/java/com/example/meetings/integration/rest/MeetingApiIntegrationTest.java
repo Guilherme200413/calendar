@@ -41,6 +41,7 @@ class MeetingApiIntegrationTest {
         userService.register("bob", "bob@example.com", "password123");
     }
 
+    /** Proposing a meeting persists it and shows it on the organizer's calendar. */
     @Test
     void proposeMeeting_persistsAndShowsOnOrganizerCalendar() throws Exception {
         mockMvc.perform(post("/meetings/new")
@@ -58,6 +59,7 @@ class MeetingApiIntegrationTest {
                 .andExpect(content().string(containsString("Sprint Planning")));
     }
 
+    /** When an invitee accepts, the meeting appears on their calendar. */
     @Test
     void invitedUser_acceptsInvite_meetingAppearsOnTheirCalendar() throws Exception {
         mockMvc.perform(post("/meetings/new")
@@ -81,6 +83,7 @@ class MeetingApiIntegrationTest {
                 .andExpect(content().string(containsString("Project Sync")));
     }
 
+    /** When an invitee declines, the meeting does not appear on their calendar. */
     @Test
     void invitedUser_declinesInvite_meetingNotOnTheirCalendar() throws Exception {
         mockMvc.perform(post("/meetings/new")
@@ -104,6 +107,7 @@ class MeetingApiIntegrationTest {
                 .andExpect(content().string(not(containsString("Design Review"))));
     }
 
+    /** An end time before the start re-renders the form with an error (validation branch). */
     @Test
     void proposeMeeting_endBeforeStart_reRendersFormWithError() throws Exception {
         mockMvc.perform(post("/meetings/new")
@@ -115,5 +119,46 @@ class MeetingApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("propose"))
                 .andExpect(model().attributeExists("error"));
+    }
+
+    /** The propose form loads for an authenticated user. */
+    @Test
+    void proposeForm_isReachableWhenAuthenticated() throws Exception {
+        mockMvc.perform(get("/meetings/new").with(user("alice")))
+                .andExpect(status().isOk())
+                .andExpect(view().name("propose"));
+    }
+
+    /** The calendar page exposes the webcal:// subscription URL (scheme rewrite). */
+    @Test
+    void calendar_exposesWebcalSubscriptionUrl() throws Exception {
+        // The calendar page derives a webcal:// URL from the https one (scheme rewrite);
+        // assert it is rendered so a regression in that derivation is detected.
+        mockMvc.perform(get("/calendar").with(user("alice")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("webcal://")));
+    }
+
+    /** Proposing a meeting without a CSRF token is rejected. */
+    @Test
+    void proposeMeeting_withoutCsrf_isForbidden() throws Exception {
+        mockMvc.perform(post("/meetings/new")
+                        .with(user("alice"))
+                        .param("title", "No CSRF")
+                        .param("start", "2099-06-10T10:00")
+                        .param("end", "2099-06-10T11:00")
+                        .param("invitees", ""))
+                .andExpect(status().isForbidden());
+    }
+
+    /** Responding to an invite without a CSRF token is rejected. */
+    @Test
+    void respondMeeting_withoutCsrf_isForbidden() throws Exception {
+        // CSRF is rejected by the filter before the controller runs, so no real meeting id
+        // is needed.
+        mockMvc.perform(post("/meetings/1/respond")
+                        .with(user("bob"))
+                        .param("action", "accept"))
+                .andExpect(status().isForbidden());
     }
 }

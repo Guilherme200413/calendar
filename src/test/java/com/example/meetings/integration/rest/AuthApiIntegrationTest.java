@@ -18,15 +18,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * REST API integration test for the authentication endpoints (task 3): registration,
- * the login/register pages, the root redirect, form login, and CSRF protection.
- *
- * Runs the real security filter chain, controllers, services and H2 database through
- * MockMvc (no @MockBean). Form login + CSRF + session make a real socket fragile, so
- * MockMvc is the appropriate transport here (see ICalFeedIntegrationTest for the
- * socket-based test of the token-based feed). @Transactional rolls back each test.
- */
+
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
@@ -41,6 +33,7 @@ class AuthApiIntegrationTest {
     @Autowired
     private UserRepository userRepository;
 
+    /** The application root redirects to the calendar. */
     @Test
     void root_redirectsToCalendar() throws Exception {
         mockMvc.perform(get("/"))
@@ -48,6 +41,7 @@ class AuthApiIntegrationTest {
                 .andExpect(redirectedUrl("/calendar"));
     }
 
+    /** The login page is reachable without authentication. */
     @Test
     void loginPage_isPublic() throws Exception {
         mockMvc.perform(get("/login"))
@@ -55,6 +49,7 @@ class AuthApiIntegrationTest {
                 .andExpect(view().name("login"));
     }
 
+    /** The registration page is reachable without authentication. */
     @Test
     void registerPage_isPublic() throws Exception {
         mockMvc.perform(get("/register"))
@@ -62,6 +57,7 @@ class AuthApiIntegrationTest {
                 .andExpect(view().name("register"));
     }
 
+    /** Registering a new user persists it and redirects to the login page. */
     @Test
     void register_newUser_redirectsToLoginAndPersists() throws Exception {
         mockMvc.perform(post("/register").with(csrf())
@@ -74,6 +70,7 @@ class AuthApiIntegrationTest {
         assertThat(userRepository.findByUsername("newuser")).isPresent();
     }
 
+    /** Registering an already-taken username re-renders the form with an error. */
     @Test
     void register_duplicateUsername_reRendersFormWithError() throws Exception {
         userService.register("taken", "taken@example.com", "password123");
@@ -87,6 +84,7 @@ class AuthApiIntegrationTest {
                 .andExpect(model().attributeExists("error"));
     }
 
+    /** A registration POST without a CSRF token is rejected. */
     @Test
     void register_withoutCsrf_isForbidden() throws Exception {
         mockMvc.perform(post("/register")
@@ -96,6 +94,7 @@ class AuthApiIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    /** Valid credentials authenticate the user and redirect to the calendar. */
     @Test
     void login_validCredentials_authenticatesAndRedirectsToCalendar() throws Exception {
         userService.register("alice", "alice@example.com", "password123");
@@ -105,6 +104,7 @@ class AuthApiIntegrationTest {
                 .andExpect(redirectedUrl("/calendar"));
     }
 
+    /** Invalid credentials leave the user unauthenticated and redirect to the error page. */
     @Test
     void login_invalidCredentials_failsAuthentication() throws Exception {
         userService.register("alice", "alice@example.com", "password123");

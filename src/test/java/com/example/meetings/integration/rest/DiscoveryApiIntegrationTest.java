@@ -17,16 +17,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * REST API integration test for the discovery endpoints (task 3): the discover page and
- * copying a discovered event into the user's calendar.
- *
- * Full stack via MockMvc (real services + H2), no @MockBean. External providers are
- * disabled in the test configuration (no API keys / base-url pointing nowhere), so the
- * discover page renders with no results without any network call; the copy endpoint does
- * not depend on a provider (it receives the event data directly). @Transactional rolls
- * back each test.
- */
+
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
@@ -46,6 +37,7 @@ class DiscoveryApiIntegrationTest {
         userService.register("alice", "alice@example.com", "password123");
     }
 
+    /** The discover page requires authentication. */
     @Test
     void discover_unauthenticated_redirectsToLogin() throws Exception {
         mockMvc.perform(get("/discover"))
@@ -53,6 +45,7 @@ class DiscoveryApiIntegrationTest {
                 .andExpect(redirectedUrlPattern("**/login"));
     }
 
+    /** An authenticated user can open the discover page. */
     @Test
     void discover_authenticated_returnsOk() throws Exception {
         mockMvc.perform(get("/discover").with(user("alice")))
@@ -60,6 +53,7 @@ class DiscoveryApiIntegrationTest {
                 .andExpect(view().name("discover"));
     }
 
+    /** Copying a discovered event persists it as a meeting and redirects to the calendar. */
     @Test
     void copy_validEvent_redirectsToCalendarAndPersists() throws Exception {
         mockMvc.perform(post("/discover/copy")
@@ -76,6 +70,7 @@ class DiscoveryApiIntegrationTest {
                 .containsExactly("Live Concert");
     }
 
+    /** A copy POST without a CSRF token is rejected. */
     @Test
     void copy_withoutCsrf_isForbidden() throws Exception {
         mockMvc.perform(post("/discover/copy")
