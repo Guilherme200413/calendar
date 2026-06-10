@@ -1,4 +1,4 @@
-package com.example.meetings.controller;
+package com.example.meetings.unit;
 
 import com.example.meetings.model.*;
 import com.example.meetings.service.MeetingService;

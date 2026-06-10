@@ -1,5 +1,7 @@
-package com.example.meetings.discover;
+package com.example.meetings.integration.external;
 
+import com.example.meetings.discover.DiscoveredEvent;
+import com.example.meetings.discover.TicketmasterProvider;
 import com.xebialabs.restito.server.StubServer;
 import org.glassfish.grizzly.http.Method;
 import org.glassfish.grizzly.http.util.HttpStatus;

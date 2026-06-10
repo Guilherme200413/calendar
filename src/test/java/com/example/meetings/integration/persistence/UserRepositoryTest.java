@@ -1,6 +1,8 @@
-package com.example.meetings.repository;
+package com.example.meetings.integration.persistence;
 
 import com.example.meetings.model.User;
+import com.example.meetings.repository.UserRepository;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

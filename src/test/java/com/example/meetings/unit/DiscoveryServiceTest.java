@@ -1,9 +1,13 @@
-package com.example.meetings.discover;
+package com.example.meetings.unit;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.example.meetings.discover.DiscoveredEvent;
+import com.example.meetings.discover.DiscoveryService;
+import com.example.meetings.discover.EventProvider;
 
 import java.time.Instant;
 import java.util.List;

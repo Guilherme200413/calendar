@@ -1,4 +1,4 @@
-package com.example.meetings.controller;
+package com.example.meetings.integration.rest;
 
 import com.example.meetings.model.InviteStatus;
 import com.example.meetings.model.Meeting;

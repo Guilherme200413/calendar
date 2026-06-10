@@ -1,8 +1,13 @@
-package com.example.meetings.service;
+package com.example.meetings.unit;
 
 import com.example.meetings.discover.DiscoveredEvent;
+import com.example.meetings.integration.persistence.*;
 import com.example.meetings.model.*;
-import com.example.meetings.repository.*;
+import com.example.meetings.repository.MeetingParticipantRepository;
+import com.example.meetings.repository.MeetingRepository;
+import com.example.meetings.repository.UserRepository;
+import com.example.meetings.service.MeetingService;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

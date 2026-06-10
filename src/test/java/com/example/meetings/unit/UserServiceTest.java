@@ -1,7 +1,9 @@
-package com.example.meetings.service;
+package com.example.meetings.unit;
 
 import com.example.meetings.model.User;
 import com.example.meetings.repository.UserRepository;
+import com.example.meetings.service.UserService;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

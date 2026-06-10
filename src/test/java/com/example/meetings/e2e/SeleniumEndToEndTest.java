@@ -1,4 +1,4 @@
-package com.example.meetings.selenium;
+package com.example.meetings.e2e;
 
 import org.junit.jupiter.api.*;
 import org.openqa.selenium.*;

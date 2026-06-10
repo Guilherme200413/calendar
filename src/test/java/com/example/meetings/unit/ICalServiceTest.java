@@ -1,6 +1,8 @@
-package com.example.meetings.service;
+package com.example.meetings.unit;
 
 import com.example.meetings.model.*;
+import com.example.meetings.service.ICalService;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
